@@ -1,26 +1,99 @@
 @import "tailwindcss";
 
+/* Monochromatic Design System Variables */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --color-primary: #000000;      /* Pure black */
+  --color-secondary: #ffffff;    /* Pure white */
+  --color-gray-light: #f5f5f5;   /* Light gray backgrounds */
+  --color-gray-medium: #737373;  /* Medium gray text */
+  --color-gray-dark: #404040;    /* Dark gray borders */
+  --color-error: #444444;        /* Dark gray for errors */
+  --color-success: #222222;      /* Very dark gray for success */
+  --color-border: #e5e5e5;       /* Default border color */
+  --color-background: #ffffff;   /* Page background */
+  --color-foreground: #000000;   /* Text color */
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* Base styles for consistent typography and layout */
+* {
+  box-sizing: border-box;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  font-size: 16px;
+  line-height: 1.5;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  margin: 0;
+  padding: 0;
+  background-color: var(--color-background);
+  color: var(--color-foreground);
   font-family: Arial, Helvetica, sans-serif;
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Typography scale */
+h1, h2, h3, h4, h5, h6 {
+  margin: 0;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+h1 { font-size: 2rem; }    /* 32px */
+h2 { font-size: 1.5rem; }  /* 24px */
+h3 { font-size: 1.25rem; } /* 20px */
+h4 { font-size: 1.125rem; }/* 18px */
+h5 { font-size: 1rem; }    /* 16px */
+h6 { font-size: 0.875rem; }/* 14px */
+
+p {
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Form elements styling */
+input, textarea, select, button {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  background: none;
+  padding: 0;
+}
+
+/* Focus styles for accessibility */
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Utility classes for consistent spacing */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+/* Status indicator styles */
+.status-pending {
+  border: 2px solid var(--color-gray-medium);
+}
+
+.status-completed {
+  border: 2px solid var(--color-success);
+}
+
+.status-failed {
+  border: 2px solid var(--color-error);
+}
+
+/* Monospace text for technical data */
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
 }
