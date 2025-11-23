@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import { useState, memo, useCallback } from 'react';
 import { cn } from '../lib/utils';
 import SystemHealth from './SystemHealth';
+import ErrorBoundary from './ErrorBoundary';
 
 // Navigation tab types
 export type NavigationTab = 'payment' | 'qr' | 'status' | 'health' | 'pending';
@@ -21,17 +22,17 @@ const navigationTabs: { id: NavigationTab; label: string }[] = [
   { id: 'pending', label: 'Pending' },
 ];
 
-export default function Layout({
+const Layout = memo(function Layout({
   children,
   activeTab = 'payment',
   onTabChange,
 }: LayoutProps) {
   const [currentTab, setCurrentTab] = useState<NavigationTab>(activeTab);
 
-  const handleTabClick = (tab: NavigationTab) => {
+  const handleTabClick = useCallback((tab: NavigationTab) => {
     setCurrentTab(tab);
     onTabChange?.(tab);
-  };
+  }, [onTabChange]);
 
   return (
     <div className="min-h-screen bg-white">
@@ -41,12 +42,16 @@ export default function Layout({
           <div className="flex items-center justify-between h-16">
             {/* System Title */}
             <div className="flex items-center">
-              <h1 className="text-xl font-bold">EVVM Payment System</h1>
+              <h1 className="text-xl font-bold">ScanGo</h1>
             </div>
 
             {/* Health Status Display */}
             <div className="flex items-center">
-              <SystemHealth compact={true} />
+              <ErrorBoundary fallback={
+                <div className="text-xs text-gray-300">Health: Unavailable</div>
+              }>
+                <SystemHealth compact={true} />
+              </ErrorBoundary>
             </div>
           </div>
         </div>
@@ -83,7 +88,19 @@ export default function Layout({
             {/* Main Content Column */}
             <div className="lg:col-span-8">
               <div className="bg-white border border-gray-200 rounded-lg p-6">
-                {children}
+                <ErrorBoundary fallback={
+                  <div className="text-center py-8">
+                    <div className="text-gray-600 mb-2">Content temporarily unavailable</div>
+                    <button 
+                      onClick={() => window.location.reload()}
+                      className="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50"
+                    >
+                      Refresh Page
+                    </button>
+                  </div>
+                }>
+                  {children}
+                </ErrorBoundary>
               </div>
             </div>
 
@@ -96,9 +113,13 @@ export default function Layout({
                     System Information
                   </h3>
                   <div className="text-xs text-gray-600 space-y-1">
-                    <div>EVVM Fisher/Relayer</div>
+                    <div>ScanGo Payment System</div>
                     <div>Port: 3001</div>
-                    <SystemHealth compact={true} className="mt-2" />
+                    <ErrorBoundary fallback={
+                      <div className="text-xs text-gray-500">Health: Error</div>
+                    }>
+                      <SystemHealth compact={true} className="mt-2" />
+                    </ErrorBoundary>
                   </div>
                 </div>
 
@@ -165,6 +186,8 @@ export default function Layout({
       </main>
     </div>
   );
-}
+});
+
+export default Layout;
 
 // Navigation tab type is already exported at the top

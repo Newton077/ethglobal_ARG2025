@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, memo, useRef } from 'react';
 import { getHealth } from '../lib/api';
 import { HealthResponse, REFRESH_INTERVALS } from '../lib/types';
 import { formatTimestamp, cn } from '../lib/utils';
@@ -19,17 +19,27 @@ interface HealthState {
   lastUpdated?: number;
 }
 
-export default function SystemHealth({ className, compact = false }: SystemHealthProps) {
+const SystemHealth = memo(function SystemHealth({ className, compact = false }: SystemHealthProps) {
   const [healthState, setHealthState] = useState<HealthState>({
     isConnected: false,
     isLoading: true,
   });
 
+  // Use ref to track if component is mounted to prevent state updates after unmount
+  const isMountedRef = useRef(true);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
   const fetchHealth = useCallback(async () => {
+    // Don't proceed if component is unmounted
+    if (!isMountedRef.current) return;
+
     try {
       setHealthState(prev => ({ ...prev, isLoading: true, error: undefined }));
       
       const response = await getHealth();
+      
+      // Check if component is still mounted before updating state
+      if (!isMountedRef.current) return;
       
       if (response.success && response.data) {
         setHealthState({
@@ -48,6 +58,9 @@ export default function SystemHealth({ className, compact = false }: SystemHealt
         });
       }
     } catch (error) {
+      // Check if component is still mounted before updating state
+      if (!isMountedRef.current) return;
+      
       setHealthState({
         isConnected: false,
         error: error instanceof Error ? error.message : 'Connection failed',
@@ -57,13 +70,22 @@ export default function SystemHealth({ className, compact = false }: SystemHealt
     }
   }, []);
 
-  // Initial fetch and auto-refresh setup
+  // Initial fetch and auto-refresh setup with proper cleanup
   useEffect(() => {
     fetchHealth();
     
-    const interval = setInterval(fetchHealth, REFRESH_INTERVALS.HEALTH_CHECK);
+    intervalRef.current = setInterval(fetchHealth, REFRESH_INTERVALS.HEALTH_CHECK);
     
-    return () => clearInterval(interval);
+    return () => {
+      // Mark component as unmounted
+      isMountedRef.current = false;
+      
+      // Clear interval
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
   }, [fetchHealth]);
 
   // Compact header display
@@ -114,7 +136,7 @@ export default function SystemHealth({ className, compact = false }: SystemHealt
       {/* Connection Status Card */}
       <div className="bg-white border border-gray-200 rounded-lg p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-medium text-black">EVVM API Status</h2>
+          <h2 className="text-lg font-medium text-black">ScanGo API Status</h2>
           <button
             onClick={fetchHealth}
             disabled={healthState.isLoading}
@@ -271,7 +293,9 @@ export default function SystemHealth({ className, compact = false }: SystemHealt
       </div>
     </div>
   );
-}
+});
+
+export default SystemHealth;
 
 // Export health state type for use in other components
 export type { HealthState };

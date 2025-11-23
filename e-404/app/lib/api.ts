@@ -13,7 +13,7 @@ import {
 } from './types';
 
 // Configuration
-const EVVM_API_BASE_URL = 'http://localhost:3001';
+const SCANGO_API_BASE_URL = 'http://localhost:3001';
 const DEFAULT_TIMEOUT = 10000; // 10 seconds
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 1000; // 1 second
@@ -21,14 +21,14 @@ const RETRY_DELAY = 1000; // 1 second
 /**
  * Custom error class for API errors
  */
-export class EVVMAPIError extends Error {
+export class ScanGoAPIError extends Error {
   constructor(
     message: string,
     public statusCode?: number,
     public originalError?: Error
   ) {
     super(message);
-    this.name = 'EVVMAPIError';
+    this.name = 'ScanGoAPIError';
   }
 }
 
@@ -46,7 +46,7 @@ async function apiRequest<T>(
   options: RequestInit = {},
   retries = MAX_RETRIES
 ): Promise<APIResponse<T>> {
-  const url = `${EVVM_API_BASE_URL}${endpoint}`;
+  const url = `${SCANGO_API_BASE_URL}${endpoint}`;
   
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT);
@@ -66,7 +66,7 @@ async function apiRequest<T>(
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new EVVMAPIError(
+      throw new ScanGoAPIError(
         errorData.message || `HTTP ${response.status}: ${response.statusText}`,
         response.status
       );
@@ -82,7 +82,7 @@ async function apiRequest<T>(
 
     // Handle abort (timeout) errors
     if (error instanceof Error && error.name === 'AbortError') {
-      const timeoutError = new EVVMAPIError('Request timeout', 408, error);
+      const timeoutError = new ScanGoAPIError('Request timeout', 408, error);
       
       if (retries > 0) {
         await sleep(RETRY_DELAY);
@@ -110,13 +110,13 @@ async function apiRequest<T>(
         success: false,
         error: {
           error: 'NETWORK_ERROR',
-          message: 'Unable to connect to EVVM API. Please check your connection.',
+          message: 'Unable to connect to ScanGo API. Please check your connection.',
         },
       };
     }
 
     // Handle API errors
-    if (error instanceof EVVMAPIError) {
+    if (error instanceof ScanGoAPIError) {
       return {
         success: false,
         error: {
@@ -139,7 +139,7 @@ async function apiRequest<T>(
 }
 
 /**
- * Health check - Get EVVM_API system status
+ * Health check - Get ScanGo API system status
  */
 export async function getHealth(): Promise<APIResponse<HealthResponse>> {
   return apiRequest<HealthResponse>(API_ENDPOINTS.HEALTH);

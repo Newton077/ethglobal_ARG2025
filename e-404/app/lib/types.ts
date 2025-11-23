@@ -1,7 +1,7 @@
-// EVVM_API Response Types
+// ScanGo API Response Types
 
 /**
- * Health endpoint response from EVVM_API
+ * Health endpoint response from ScanGo API
  */
 export interface HealthResponse {
   status: string;
@@ -10,7 +10,7 @@ export interface HealthResponse {
 }
 
 /**
- * System statistics response from EVVM_API
+ * System statistics response from ScanGo API
  */
 export interface StatsResponse {
   fisher: {
@@ -35,7 +35,7 @@ export interface StatsResponse {
 export type PaymentStatus = 'pending' | 'completed' | 'failed';
 
 /**
- * Payment object from EVVM_API
+ * Payment object from ScanGo API
  */
 export interface Payment {
   id: string;
@@ -53,7 +53,7 @@ export interface Payment {
 }
 
 /**
- * QR generation response from EVVM_API
+ * QR generation response from ScanGo API
  */
 export interface QRResponse {
   qrData: string;

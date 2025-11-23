@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "EVVM Payment System",
-  description: "EVVM Fisher/Relayer payment interface for stablecoin transfers",
+  title: "ScanGo",
+  description: "ScanGo payment interface for stablecoin transfers",
 };
 
 export default function RootLayout({
