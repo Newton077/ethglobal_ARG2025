@@ -5,14 +5,15 @@ import Relayer from './relayer';
 import QRPaymentGenerator from './qrPayment';
 import config from './config';
 import { StablecoinPayment } from './types';
+import { ValidationError, formatValidationError, validatePaymentRequest, validateToken } from './validation';
 
 const app = express();
 app.use(express.json());
 
 // Inicializar Fisher y Relayer
 const fisher = new Fisher({
-  rpcUrl: config.mate.rpcUrl,
-  chainId: config.mate.chainId,
+  rpcUrl: config.blockchain.rpcUrl,
+  chainId: config.blockchain.chainId,
   relayerAddress: config.relayer.address,
   relayerPrivateKey: config.relayer.privateKey,
   stablecoins: config.stablecoins,
@@ -20,9 +21,9 @@ const fisher = new Fisher({
 
 const relayer = new Relayer(
   fisher,
-  config.mate.rpcUrl,
+  config.blockchain.rpcUrl,
   config.relayer.privateKey,
-  config.mate.chainId
+  config.blockchain.chainId
 );
 
 const qrGenerator = new QRPaymentGenerator('evvm://pay');
@@ -41,16 +42,28 @@ app.post('/api/payments', async (req, res) => {
   try {
     const { from, to, amount, token, metadata } = req.body;
 
+    // Validate required fields are present
     if (!from || !to || !amount || !token) {
-      return res.status(400).json({ error: 'Missing required fields' });
+      return res.status(400).json({
+        error: 'Validation failed',
+        details: 'Missing required fields: from, to, amount, token',
+      });
+    }
+
+    // Validate payment request
+    try {
+      validatePaymentRequest(from, to, amount, token);
+    } catch (validationError) {
+      const formatted = formatValidationError(validationError);
+      return res.status(400).json(formatted);
     }
 
     const payment: StablecoinPayment = {
       id: uuidv4(),
       from,
       to,
-      amount,
-      token: token.toUpperCase(),
+      amount: String(amount),
+      token: 'MATE',
       status: 'pending',
       timestamp: Date.now(),
       metadata,
@@ -64,6 +77,11 @@ app.post('/api/payments', async (req, res) => {
       status: payment.status,
     });
   } catch (error) {
+    if (error instanceof ValidationError) {
+      const formatted = formatValidationError(error);
+      return res.status(400).json(formatted);
+    }
+
     console.error('Error creating payment:', error);
     res.status(500).json({ error: 'Failed to create payment' });
   }
@@ -127,11 +145,23 @@ app.post('/api/qr/generate', (req, res) => {
   try {
     const { to, amount, token, description } = req.body;
 
+    // Validate required fields
     if (!to || !amount || !token) {
-      return res.status(400).json({ error: 'Missing required fields' });
+      return res.status(400).json({
+        error: 'Validation failed',
+        details: 'Missing required fields: to, amount, token',
+      });
     }
 
-    const qrData = qrGenerator.generatePaymentRequestQR(to, amount, token, description);
+    // Validate payment parameters
+    try {
+      validatePaymentRequest('0x0000000000000000000000000000000000000000', to, amount, token);
+    } catch (validationError) {
+      const formatted = formatValidationError(validationError);
+      return res.status(400).json(formatted);
+    }
+
+    const qrData = qrGenerator.generatePaymentRequestQR(to, String(amount), token.toUpperCase(), description);
 
     res.json({
       qrData,
@@ -139,6 +169,11 @@ app.post('/api/qr/generate', (req, res) => {
       description: `Pay ${amount} ${token} to ${to}`,
     });
   } catch (error) {
+    if (error instanceof ValidationError) {
+      const formatted = formatValidationError(error);
+      return res.status(400).json(formatted);
+    }
+
     console.error('Error generating QR:', error);
     res.status(500).json({ error: 'Failed to generate QR' });
   }
@@ -152,17 +187,36 @@ app.post('/api/qr/parse', (req, res) => {
     const { qrData } = req.body;
 
     if (!qrData) {
-      return res.status(400).json({ error: 'Missing qrData' });
+      return res.status(400).json({
+        error: 'Validation failed',
+        details: 'Missing required field: qrData',
+      });
     }
 
     const parsed = qrGenerator.parsePaymentQR(qrData);
 
-    if (!parsed) {
-      return res.status(400).json({ error: 'Invalid QR data' });
+    if (!parsed || !parsed.to || !parsed.amount || !parsed.token) {
+      return res.status(400).json({
+        error: 'Validation failed',
+        details: 'Invalid QR data format. Must contain: to, amount, token',
+      });
+    }
+
+    // Validate parsed data
+    try {
+      validatePaymentRequest('0x0000000000000000000000000000000000000000', parsed.to, parsed.amount, parsed.token);
+    } catch (validationError) {
+      const formatted = formatValidationError(validationError);
+      return res.status(400).json(formatted);
     }
 
     res.json(parsed);
   } catch (error) {
+    if (error instanceof ValidationError) {
+      const formatted = formatValidationError(error);
+      return res.status(400).json(formatted);
+    }
+
     console.error('Error parsing QR:', error);
     res.status(500).json({ error: 'Failed to parse QR' });
   }

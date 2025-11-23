@@ -1,5 +1,6 @@
 import { ethers } from 'ethers';
 import { StablecoinPayment, FisherEvent, FisherConfig } from './types';
+import { validatePaymentRequest, ValidationError } from './validation';
 import config from './config';
 
 export class Fisher {
@@ -7,10 +8,12 @@ export class Fisher {
   private wallet: ethers.Wallet;
   private listeners: ((event: FisherEvent) => void)[] = [];
   private payments: Map<string, StablecoinPayment> = new Map();
+  private supportedTokens: Set<string>;
 
   constructor(cfg: FisherConfig) {
     this.provider = new ethers.JsonRpcProvider(cfg.rpcUrl, cfg.chainId);
     this.wallet = new ethers.Wallet(cfg.relayerPrivateKey, this.provider);
+    this.supportedTokens = new Set(Object.keys(cfg.stablecoins));
   }
 
   /**
@@ -29,8 +32,19 @@ export class Fisher {
 
   /**
    * Recibe una solicitud de pago y la registra
+   * Valida todos los parámetros antes de registrar
    */
   async receivePayment(payment: StablecoinPayment): Promise<void> {
+    // Validate payment request
+    validatePaymentRequest(payment.from, payment.to, payment.amount, payment.token);
+
+    // Validate token is in supported list
+    if (!this.supportedTokens.has(payment.token)) {
+      throw new ValidationError(
+        `Token ${payment.token} not supported. Supported tokens: ${Array.from(this.supportedTokens).join(', ')}`
+      );
+    }
+
     payment.status = 'pending';
     payment.timestamp = Date.now();
     

@@ -60,7 +60,7 @@ export class QRPaymentGenerator {
         id: params.get('id') || undefined,
         to: params.get('to') || '',
         amount: params.get('amount') || '',
-        token: (params.get('token') || 'USDC') as 'USDC' | 'USDT' | 'DAI',
+        token: 'MATE',
         from: params.get('from') || '',
       };
     } catch (error) {

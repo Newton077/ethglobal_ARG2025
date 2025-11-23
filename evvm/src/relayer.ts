@@ -61,7 +61,11 @@ export class Relayer {
       // Verificar si hay gas disponible para patrocinar
       const canSponsor = await this.gasSponsor.canSponsor('100000');
       if (!canSponsor) {
-        throw new Error('Insufficient gas to sponsor transaction');
+        const errorMsg = 'Insufficient gas balance to sponsor transaction. Relayer balance is too low.';
+        console.warn(`[Relayer] ${errorMsg} Payment ${payment.id} will be retried.`);
+        // Reset to pending so it can be retried in next cycle
+        await this.fisher.markAsProcessing(payment.id);
+        throw new Error(errorMsg);
       }
 
       // Ejecutar la transacción de stablecoin
@@ -70,6 +74,14 @@ export class Relayer {
       await this.fisher.markAsCompleted(payment.id, txHash);
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
+      
+      // Check if this is a gas sponsorship error
+      if (errorMsg.includes('Insufficient gas')) {
+        console.warn(`[Relayer] Gas sponsorship error for payment ${payment.id}: ${errorMsg}`);
+        // Don't mark as failed, let it retry in next cycle
+        return;
+      }
+
       console.error(`[Relayer] Error processing payment ${payment.id}:`, errorMsg);
       await this.fisher.markAsFailed(payment.id, errorMsg);
     }

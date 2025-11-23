@@ -3,7 +3,7 @@ export interface StablecoinPayment {
   from: string;
   to: string;
   amount: string;
-  token: 'USDC' | 'USDT' | 'DAI';
+  token: 'MATE';
   status: 'pending' | 'processing' | 'completed' | 'failed';
   txHash?: string;
   timestamp: number;
