@@ -1,134 +1,177 @@
-# EVVM Fisher/Relayer - Stablecoin Payments
+# EVVM Fisher/Relayer - Sistema de Pagos con Stablecoins
 
-Sistema de procesamiento de pagos con stablecoins usando EVVM Fisher/Relayer en Sepolia con **subsidio de gas**.
+Sistema de procesamiento de pagos con stablecoins usando el patrón Fisher/Relayer para Ethereum Sepolia.
 
-## Características
+## 🎯 Características
 
-- 🎣 **Fisher**: Recibe y gestiona solicitudes de pago
-- 🚀 **Relayer**: Ejecuta transacciones automáticamente
-- ⛽ **Gas Sponsorship**: El relayer paga el gas (sin costo para usuarios)
-- 📱 **QR Payments**: Genera y parsea QR para pagos
-- 💰 **Stablecoins**: Soporta USDC, USDT, DAI
+- ✅ API REST para gestión de pagos
+- ✅ Procesamiento automático de transacciones (Relayer)
+- ✅ Gestión de cola de pagos (Fisher)
+- ✅ Generación y parseo de códigos QR para pagos
+- ✅ Soporte para token MATE
+- ✅ Estadísticas en tiempo real
+- ✅ Validación completa de datos
 
-## Setup
+## 🚀 Inicio Rápido
+
+### 1. Instalar Dependencias
 
 ```bash
 npm install
-cp .env.example .env
 ```
 
-Configura en `.env`:
-- `RELAYER_PRIVATE_KEY`: Clave privada del relayer (debe tener ETH para gas)
-- `USDC_ADDRESS`, `USDT_ADDRESS`: Direcciones de tokens en Sepolia
-- `MATE_RPC_URL`: RPC de MATE o Sepolia
+### 2. Configurar Variables de Entorno
 
-## Uso
+Copia el archivo `.env.example` a `.env` y configura:
 
 ```bash
-npm run dev      # Desarrollo
-npm run build    # Build
-npm start        # Producción
+# Red Blockchain
+BLOCKCHAIN_RPC_URL=https://ethereum-sepolia-rpc.publicnode.com
+BLOCKCHAIN_CHAIN_ID=11155111
+
+# Relayer (necesita SepoliaETH para gas)
+RELAYER_PRIVATE_KEY=tu_clave_privada
+
+# Token MATE en Sepolia
+MATE_ADDRESS=dirección_del_contrato_MATE
 ```
 
-## API Endpoints
+### 3. Verificar Conexión
 
-### Pagos
-
-**Crear Pago** (sin gas para usuario)
 ```bash
-POST /api/payments
-{
-  "from": "0x...",
-  "to": "0x...",
-  "amount": "100",
-  "token": "USDC",
-  "metadata": { "orderId": "123" }
-}
+npm run check
 ```
 
-**Consultar Pago**
+### 4. Iniciar el Servidor
+
 ```bash
-GET /api/payments/:id
+npm run dev
 ```
 
-**Pagos Pendientes**
+### 5. Probar la API
+
+En otra terminal:
+
 ```bash
-GET /api/payments
+npm run test:evvm
 ```
 
-### QR Payments
+## 📚 Documentación
 
-**Generar QR**
+- [QUICKSTART.md](QUICKSTART.md) - Guía de inicio rápido
+- [TESTING.md](TESTING.md) - Guía completa de pruebas
+- [API-EXAMPLES.md](API-EXAMPLES.md) - Ejemplos de uso de la API
+
+## 🔌 Endpoints de la API
+
+### Gestión de Pagos
+
+- `POST /api/payments` - Crear un nuevo pago
+- `GET /api/payments/:id` - Consultar estado de un pago
+- `GET /api/payments` - Listar pagos pendientes
+
+### Códigos QR
+
+- `POST /api/qr/generate` - Generar QR de pago
+- `POST /api/qr/parse` - Parsear QR de pago
+
+### Información
+
+- `GET /api/health` - Estado del servidor
+- `GET /api/stats` - Estadísticas del relayer
+
+## 🏗️ Arquitectura
+
+```
+┌─────────────┐
+│   Cliente   │
+└──────┬──────┘
+       │ HTTP Request
+       ▼
+┌─────────────┐
+│  API REST   │
+└──────┬──────┘
+       │
+       ▼
+┌─────────────┐      ┌──────────────┐
+│   Fisher    │◄────►│   Relayer    │
+└─────────────┘      └──────┬───────┘
+                            │
+                            ▼
+                     ┌──────────────┐
+                     │   Sepolia    │
+                     │  Blockchain  │
+                     └──────────────┘
+```
+
+### Componentes
+
+- **Fisher**: Gestiona la cola de pagos y eventos
+- **Relayer**: Procesa pagos y envía transacciones a la blockchain
+- **API REST**: Interfaz HTTP para interactuar con el sistema
+- **QR Generator**: Genera y parsea códigos QR para pagos
+
+## 🛠️ Scripts Disponibles
+
 ```bash
-POST /api/qr/generate
-{
-  "to": "0x...",
-  "amount": "100",
-  "token": "USDC",
-  "description": "Pago por servicio"
-}
+npm run dev          # Iniciar en modo desarrollo
+npm run build        # Compilar TypeScript
+npm start            # Iniciar en producción
+npm run check        # Verificar conexión con Sepolia
+npm run test:evvm    # Ejecutar pruebas automáticas
 ```
 
-**Parsear QR**
-```bash
-POST /api/qr/parse
-{
-  "qrData": "evvm://pay?to=0x...&amount=100&token=USDC"
-}
+## 🔐 Seguridad
+
+- ⚠️ **NUNCA** commitees tu `RELAYER_PRIVATE_KEY` al repositorio
+- Usa variables de entorno para datos sensibles
+- El relayer necesita fondos para pagar el gas
+- Valida todas las entradas de usuario
+
+## 📊 Monitoreo
+
+El servidor muestra logs en tiempo real:
+
+```
+[Server] Running on port 3001
+[Relayer] Address: 0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb
+[Relayer] Started processing payments
+[Event] payment_received: 550e8400-e29b-41d4-a716-446655440000
+[Event] payment_processing: 550e8400-e29b-41d4-a716-446655440000
+[Event] payment_completed: 550e8400-e29b-41d4-a716-446655440000
 ```
 
-### Estadísticas
+Puedes ver las transacciones en [Sepolia Etherscan](https://sepolia.etherscan.io/).
 
-**Stats (incluye gas disponible)**
-```bash
-GET /api/stats
-```
+## 🌐 Recursos
 
-Respuesta:
-```json
-{
-  "fisher": {
-    "totalPayments": 10,
-    "pending": 2,
-    "processing": 1,
-    "completed": 7,
-    "failed": 0
-  },
-  "relayer": {
-    "isProcessing": false,
-    "queueLength": 0,
-    "relayerAddress": "0x..."
-  },
-  "gasSponsorship": {
-    "relayerAddress": "0x...",
-    "balance": "0.5",
-    "estimatedGasPerTx": "0.001",
-    "maxTransactionsSupported": 500
-  }
-}
-```
+- **Sepolia Faucet**: https://sepoliafaucet.com/
+- **Sepolia Explorer**: https://sepolia.etherscan.io/
+- **Alchemy Faucet**: https://www.alchemy.com/faucets/ethereum-sepolia
 
-**Health Check**
-```bash
-GET /api/health
-```
+## 🤝 Contribuir
 
-## Flujo de Pago
+1. Fork el proyecto
+2. Crea una rama para tu feature (`git checkout -b feature/AmazingFeature`)
+3. Commit tus cambios (`git commit -m 'Add some AmazingFeature'`)
+4. Push a la rama (`git push origin feature/AmazingFeature`)
+5. Abre un Pull Request
 
-1. Usuario escanea QR o envía solicitud a `/api/payments`
-2. Fisher recibe y registra como "pending"
-3. Relayer verifica gas disponible
-4. Ejecuta transferencia de stablecoin (relayer paga gas)
-5. Marca como "completed" con txHash
+## 📝 Licencia
 
-## Gas Sponsorship
+Este proyecto está bajo la licencia MIT.
 
-- El relayer mantiene un balance de ETH
-- Verifica gas disponible antes de procesar
-- Estima ~65,000 gas por transferencia ERC20
-- Soporta múltiples transacciones simultáneas
+## 🐛 Problemas Conocidos
 
-## Tracks
+- Los pagos se almacenan en memoria (se pierden al reiniciar)
+- El relayer procesa pagos cada 5 segundos por defecto
+- Se requiere SepoliaETH para el gas
 
-- 🎣 **Fisher/Relayer**: Captura y ejecuta transacciones en EVVM
-- ⚙️ **Custom Service**: Servicio de pagos con stablecoins sin gas
+## 🔮 Roadmap
+
+- [ ] Persistencia de pagos en base de datos
+- [ ] Soporte para múltiples stablecoins
+- [ ] Dashboard web para monitoreo
+- [ ] Webhooks para notificaciones
+- [ ] Optimización de gas
+- [ ] Soporte para mainnet
